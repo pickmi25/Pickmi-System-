@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Animated, TouchableOpacity } from 'react-native';
-import { Text, TextInput, Button, Chip, Title, Paragraph, IconButton, SegmentedButtons } from 'react-native-paper';
+import { Text, TextInput, Button, Chip, Title, Paragraph, IconButton, SegmentedButtons, Divider } from 'react-native-paper';
 import axios from 'axios';
-import { ArrowLeft, Info, Search, ShieldAlert, Plus, Trash2 } from 'lucide-react-native';
+import { ArrowLeft, Info, Search, ShieldAlert, Plus, Trash2, LogOut } from 'lucide-react-native';
 
 import { BACKEND_URL } from '../config'; 
 
-const KeywordSettingsScreen = ({ navigation }) => {
+const KeywordSettingsScreen = ({ navigation, onLogout }) => {
   const [activeTab, setActiveTab] = useState('match');
   const [matchKeywords, setMatchKeywords] = useState([]);
   const [avoidKeywords, setAvoidKeywords] = useState([]);
@@ -124,22 +124,36 @@ const KeywordSettingsScreen = ({ navigation }) => {
         </View>
 
         <View style={styles.keywordSection}>
-           <Title style={styles.sectionTitle}>
-               {activeTab === 'match' ? 'Active Triggers' : 'Ignored Words'}
-           </Title>
-           <View style={styles.chipContainer}>
-              {currentKeywords.map((word, index) => (
-                <Chip 
-                    key={index}
-                    onClose={() => removeKeyword(word)}
-                    style={styles.chip}
-                    textStyle={styles.chipText}
-                    closeIcon={() => <Trash2 size={16} color="#666" />}
-                >
-                    {word}
-                </Chip>
-              ))}
-           </View>
+          <Title style={styles.sectionTitle}>
+            {activeTab === 'match' ? 'Active Triggers' : 'Ignored Words'}
+          </Title>
+          <View style={styles.chipContainer}>
+            {currentKeywords.map((word, index) => (
+              <Chip 
+                key={index}
+                onClose={() => removeKeyword(word)}
+                style={styles.chip}
+                textStyle={styles.chipText}
+                closeIcon={() => <Trash2 size={16} color="#666" />}
+              >
+                {word}
+              </Chip>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.logoutSection}>
+          <Divider style={styles.divider} />
+          <Button 
+            mode="outlined" 
+            onPress={onLogout} 
+            style={styles.logoutButton}
+            textColor="#ff5252"
+            icon={() => <LogOut size={18} color="#ff5252" />}
+          >
+            Sign Out from Admin
+          </Button>
+          <Text style={styles.versionText}>Pickmi System v2.0 (Web Only)</Text>
         </View>
       </ScrollView>
     </View>
@@ -242,6 +256,28 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 13,
   },
+  logoutSection: {
+    marginTop: 40,
+    alignItems: 'center',
+    paddingBottom: 40,
+  },
+  divider: {
+    width: '100%',
+    height: 1,
+    backgroundColor: '#eee',
+    marginBottom: 24,
+  },
+  logoutButton: {
+    width: '100%',
+    borderRadius: 12,
+    borderColor: '#ff5252',
+    borderWidth: 1.5,
+  },
+  versionText: {
+    marginTop: 16,
+    color: '#aaa',
+    fontSize: 11,
+  }
 });
 
 export default KeywordSettingsScreen;

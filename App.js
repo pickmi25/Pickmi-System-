@@ -15,6 +15,7 @@ import DashboardScreen from './src/screens/DashboardScreen';
 import ConfirmedTripsScreen from './src/screens/ConfirmedTripsScreen';
 import KeywordSettingsScreen from './src/screens/KeywordSettingsScreen';
 import ChatSelectionScreen from './src/screens/ChatSelectionScreen';
+import LoginScreen from './src/screens/LoginScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -45,7 +46,7 @@ const navigationTheme = {
   },
 };
 
-function TabNavigator() {
+function TabNavigator({ onLogout }) {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -73,12 +74,36 @@ function TabNavigator() {
       <Tab.Screen name="Home" component={DashboardScreen} options={{ tabBarLabel: 'Detections' }} />
       <Tab.Screen name="Trips" component={ConfirmedTripsScreen} options={{ tabBarLabel: 'My Trips' }} />
       <Tab.Screen name="WhatsApp" component={WhatsAppConnectScreen} options={{ tabBarLabel: 'WhatsApp' }} />
-      <Tab.Screen name="Settings" component={KeywordSettingsScreen} />
+      <Tab.Screen name="Settings">
+        {(props) => <KeywordSettingsScreen {...props} onLogout={onLogout} />}
+      </Tab.Screen>
     </Tab.Navigator>
   );
 }
 
 export default function App() {
+  const [isLoggedIn, setIsLoggedIn] = React.useState(false);
+
+  const handleLogin = () => {
+    setIsLoggedIn(true);
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+  };
+
+  if (!isLoggedIn) {
+    return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <PaperProvider theme={theme}>
+            <LoginScreen onLogin={handleLogin} />
+          </PaperProvider>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    );
+  }
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
@@ -86,7 +111,9 @@ export default function App() {
           <NavigationContainer theme={navigationTheme}>
             <StatusBar style="dark" />
             <Stack.Navigator screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="Main" component={TabNavigator} />
+              <Stack.Screen name="Main">
+                {(props) => <TabNavigator {...props} onLogout={handleLogout} />}
+              </Stack.Screen>
               <Stack.Screen name="KeywordSettings" component={KeywordSettingsScreen} />
               <Stack.Screen name="ChatSelection" component={ChatSelectionScreen} />
             </Stack.Navigator>
