@@ -516,6 +516,11 @@ safeInitialize();
 
 // API Endpoints
 app.get('/qr', (req, res) => {
+    // Force status sync if client was ready before first poll
+    if (client && client.info && connectionStatus === 'Disconnected') {
+        connectionStatus = 'Connected';
+    }
+    console.log(`[QR POLLED] Status: ${connectionStatus}, QR: ${currentQr ? 'YES' : 'NO'}`);
     res.json({ qr: currentQr, status: connectionStatus });
 });
 
@@ -560,23 +565,33 @@ app.post('/reset', async (req, res) => {
 });
 
 app.get('/status', (req, res) => {
-    res.json({ status: connectionStatus });
+    res.json({ 
+        status: connectionStatus,
+        authenticated: client?.authenticated || false,
+        ready: client?.info ? true : false
+    });
 });
 
 app.get('/profile', async (req, res) => {
-    if (connectionStatus !== 'Connected') {
+    if (connectionStatus !== 'Connected' || !client || !client.info) {
         return res.status(401).json({ error: 'Not connected' });
     }
     try {
         const info = client.info;
-        const profilePicUrl = await client.getProfilePicUrl(info.wid._serialized);
+        let profilePicUrl = "";
+        try {
+            profilePicUrl = await client.getProfilePicUrl(info.wid._serialized);
+        } catch (pfpErr) {
+            console.log("Could not fetch profile pic");
+        }
         res.json({
             name: info.pushname || 'User',
             number: info.wid.user,
             picture: profilePicUrl
         });
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        console.error("Profile Fetch Error:", e);
+        res.status(500).json({ error: "Failed to fetch profile info" });
     }
 });
 

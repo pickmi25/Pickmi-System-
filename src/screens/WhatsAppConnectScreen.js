@@ -26,13 +26,13 @@ const WhatsAppConnectScreen = ({ navigation, route }) => {
 
   const fetchData = async () => {
     try {
-      const resp = await axios.get(`${BACKEND_URL}/qr`);
+      const resp = await axios.get(`${BACKEND_URL}/qr?ts=${Date.now()}`);
       const newStatus = resp.data.status;
       setQr(resp.data.qr);
       setStatus(newStatus);
       
       if (newStatus === 'Connected' && !profile) {
-          const profResp = await axios.get(`${BACKEND_URL}/profile`);
+          const profResp = await axios.get(`${BACKEND_URL}/profile?ts=${Date.now()}`);
           setProfile(profResp.data);
           fetchChats();
       }
@@ -60,7 +60,7 @@ const WhatsAppConnectScreen = ({ navigation, route }) => {
   const fetchChats = async () => {
     if (status !== 'Connected') return;
     try {
-        const response = await axios.get(`${BACKEND_URL}/chats`);
+        const response = await axios.get(`${BACKEND_URL}/chats?ts=${Date.now()}`);
         setChats(response.data);
     } catch (e) {
         console.error("Fetch Chats Error:", e);

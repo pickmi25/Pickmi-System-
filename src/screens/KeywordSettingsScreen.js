@@ -15,8 +15,8 @@ const KeywordSettingsScreen = ({ navigation, onLogout }) => {
 
   const fetchData = async () => {
     try {
-      const matchResp = await axios.get(`${BACKEND_URL}/keywords`);
-      const avoidResp = await axios.get(`${BACKEND_URL}/avoid-keywords`);
+      const matchResp = await axios.get(`${BACKEND_URL}/keywords?ts=${Date.now()}`);
+      const avoidResp = await axios.get(`${BACKEND_URL}/avoid-keywords?ts=${Date.now()}`);
       setMatchKeywords(matchResp.data);
       setAvoidKeywords(avoidResp.data);
     } catch (error) {
