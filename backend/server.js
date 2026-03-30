@@ -553,22 +553,20 @@ client.initialize();
 let currentQr = "";
 let connectionStatus = "Disconnected";
 let isResetting = false;
-
 async function safeInitialize() {
     if (isResetting) return;
     try {
         isResetting = true;
+        console.log("Preparing to initialize WhatsApp client...");
         await initializeClient();
+        console.log("WhatsApp initialization started.");
     } catch (e) {
-        console.error("Initialization Failed:", e);
+        console.error("CRITICAL: Client Initialization Failed:", e);
     } finally {
         isResetting = false;
     }
 }
 
-safeInitialize();
-
-// API Endpoints
 app.get('/qr', (req, res) => {
     // Force status sync if client was ready before first poll
     if (client && client.info && connectionStatus === 'Disconnected') {
@@ -577,6 +575,12 @@ app.get('/qr', (req, res) => {
     console.log(`[QR POLLED] Status: ${connectionStatus}, QR: ${currentQr ? 'YES' : 'NO'}`);
     res.json({ qr: currentQr, status: connectionStatus });
 });
+
+// Global server timeout to ensure we are listening first
+setTimeout(() => {
+    safeInitialize().catch(err => console.error("SafeInit Failure:", err));
+}, 10000); 
+
 
 app.post('/reset', async (req, res) => {
     if (isResetting) {
