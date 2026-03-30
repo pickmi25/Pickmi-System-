@@ -1,0 +1,13 @@
+node_modules
+.expo
+dist
+backend/node_modules
+backend/.wwebjs_auth
+backend/.wwebjs_cache
+backend/trips.db
+backend/uploads
+.DS_Store
+.git
+.gitignore
+Dockerfile
+backend/Dockerfile
