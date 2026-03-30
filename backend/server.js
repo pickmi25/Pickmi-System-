@@ -8,10 +8,26 @@ const path = require('path');
 const fs = require('fs');
 const { createClient } = require('@supabase/supabase-js');
 
+// Environment-based config with fallback to localhost or port provided by host (Render/Heroku)
+const PORT = process.env.PORT || 3000;
+
 // Supabase configuration
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+
+let supabase;
+if (supabaseUrl && supabaseKey) {
+    try {
+        supabase = createClient(supabaseUrl, supabaseKey);
+        console.log("Supabase client initialized.");
+    } catch (err) {
+        console.error("Failed to initialize Supabase:", err.message);
+    }
+} else {
+    console.error("CRITICAL: SUPABASE_URL or SUPABASE_KEY is missing from environment variables.");
+    // In production (Render), this will cause a crash later if not handled, 
+    // but at least we get a clear error message in the logs.
+}
 
 // OpenAI Configuration
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -115,12 +131,26 @@ db.serialize(() => {
 let client;
 
 function initializeClient() {
+    const puppeteerOptions = {
+        headless: true,
+        args: [
+            '--no-sandbox', 
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--disable-gpu'
+        ]
+    };
+
+    if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+        puppeteerOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+    }
+
     client = new Client({
         authStrategy: new LocalAuth({ clientId: "client-one" }),
-        puppeteer: {
-            headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
-        }
+        puppeteer: puppeteerOptions
     });
 
     function broadcastStatus(status) {
@@ -476,10 +506,14 @@ client.on('message', async (message) => {
                         tripData.trip_date, tripData.trip_time,
                         tripData.timestamp, tripData.mediaUrl, tripData.transcription
                     ], 
-                    (err) => {
-                        if (err) console.error("DB Insert Error:", err);
-                        // Emit to real-time dashboard
-                        io.emit('trip', tripData);
+                     function(err) {
+                        if (err) {
+                            console.error("DB Insert Error:", err);
+                        } else {
+                            // Emit to real-time dashboard with the newly created ID
+                            const finalTripData = { ...tripData, id: this.lastID };
+                            io.emit('trip', finalTripData);
+                        }
                     }
                 );
 
@@ -728,6 +762,27 @@ app.post('/trips/bulk-delete', (req, res) => {
     });
 });
 
+app.post('/trips/:id/confirm', (req, res) => {
+    const id = req.params.id;
+    db.get('SELECT * FROM trips WHERE id = ?', [id], (err, trip) => {
+        if (err || !trip) return res.status(404).json({ error: "Trip not found" });
+        
+        db.run('INSERT INTO confirmed_trips (groupName, chatId, sender, senderName, message, details, perKm, bata, commission, toll, customerName, customerMobile, trip_date, trip_time, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [
+                trip.groupName, trip.chatId, trip.sender, trip.senderName, trip.message, trip.details, 
+                trip.perKm, trip.bata, trip.commission, trip.toll, 
+                trip.customerName, trip.customerMobile, 
+                trip.trip_date, trip.trip_time,
+                trip.timestamp
+            ], (insErr) => {
+                if (insErr) return res.status(500).json({ error: insErr.message });
+                db.run('DELETE FROM trips WHERE id = ?', [id], (delErr) => {
+                    res.json({ success: true });
+                });
+            });
+    });
+});
+
 app.post('/trips/bulk-confirm', (req, res) => {
     const { ids } = req.body;
     if (!Array.isArray(ids)) return res.status(400).json({ error: "Invalid IDs" });
@@ -952,11 +1007,30 @@ app.delete('/avoid-keywords/:word', (req, res) => {
     });
 });
 
+// --- Static Frontend Serving ---
+// This allows the backend to serve the web application as well.
+const distPath = path.join(__dirname, 'dist');
+if (fs.existsSync(distPath)) {
+    console.log("Found static frontend at", distPath);
+    app.use(express.static(distPath));
+    
+    // For any other route, serve the index.html from dist
+    // (This is for React Navigation / Single Page App support)
+    app.get(/.*/, (req, res, next) => {
+        // Skip API routes manually if they were not matched yet
+        const apiPrefixes = ['/qr', '/status', '/profile', '/chats', '/messages', '/monitored-chats', '/trips', '/keywords', '/avoid-keywords', '/reset', '/uploads'];
+        if (apiPrefixes.some(prefix => req.path.startsWith(prefix))) {
+            return next();
+        }
+        res.sendFile(path.join(distPath, 'index.html'));
+    });
+}
+
 io.on('connection', (socket) => {
     console.log('Dashboard connected');
     socket.emit('status', connectionStatus);
 });
 
-server.listen(3000, () => {
-    console.log(`Backend listening at http://localhost:3000`);
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`Backend and Frontend listening at port ${PORT}`);
 });

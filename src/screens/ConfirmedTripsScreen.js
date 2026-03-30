@@ -6,7 +6,7 @@ import { MapPin, Clock, Users, Send, CheckCircle2, MessageCircle, XCircle, Trash
 import { useNavigation } from '@react-navigation/native';
 import io from 'socket.io-client';
 
-import { BACKEND_URL } from '../config'; 
+import { getBackendUrl, getEffectiveBackendUrl } from '../config'; 
 
 const ConfirmedTripsScreen = () => {
   const [trips, setTrips] = useState([]);
@@ -15,7 +15,7 @@ const ConfirmedTripsScreen = () => {
   const fetchConfirmedTrips = async () => {
     try {
       setRefreshing(true);
-      const response = await axios.get(`${BACKEND_URL}/confirmed-trips`);
+      const response = await axios.get(`${getBackendUrl()}/confirmed-trips`);
       setTrips(response.data);
     } catch (error) {
        console.error('Fetch Confirmed Error:', error);
@@ -26,7 +26,7 @@ const ConfirmedTripsScreen = () => {
 
   const moveTripToManagement = async (id) => {
     try {
-      await axios.post(`${BACKEND_URL}/confirmed-trips/${id}/move`);
+      await axios.post(`${getBackendUrl()}/confirmed-trips/${id}/move`);
       fetchConfirmedTrips();
     } catch (error) {
        console.error('Move Error:', error);
@@ -35,7 +35,7 @@ const ConfirmedTripsScreen = () => {
 
   const passTrip = async (id) => {
     try {
-      await axios.post(`${BACKEND_URL}/confirmed-trips/${id}/pass`);
+      await axios.post(`${getBackendUrl()}/confirmed-trips/${id}/pass`);
       fetchConfirmedTrips();
     } catch (error) {
        console.error('Pass Error:', error);
@@ -44,7 +44,7 @@ const ConfirmedTripsScreen = () => {
 
   const deleteTrip = async (id) => {
     try {
-      await axios.delete(`${BACKEND_URL}/confirmed-trips/${id}`);
+      await axios.delete(`${getBackendUrl()}/confirmed-trips/${id}`);
       fetchConfirmedTrips();
     } catch (error) {
        console.error('Delete Trip Error:', error);
@@ -53,7 +53,7 @@ const ConfirmedTripsScreen = () => {
 
   const deleteHistory = async () => {
     try {
-      await axios.delete(`${BACKEND_URL}/confirmed-trips`);
+      await axios.delete(`${getBackendUrl()}/confirmed-trips`);
       fetchConfirmedTrips();
     } catch (error) {
        console.error('Delete History Error:', error);
@@ -66,7 +66,7 @@ const ConfirmedTripsScreen = () => {
     fetchConfirmedTrips();
     
     // Setup Socket.io for instant updates
-    const socket = io(BACKEND_URL, {
+    const socket = io(getEffectiveBackendUrl(), {
         transports: ['websocket'],
         reconnection: true,
     });

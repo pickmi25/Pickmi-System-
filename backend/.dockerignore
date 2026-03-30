@@ -1,0 +1,7 @@
+node_modules
+.env
+.DS_Store
+.wwebjs_auth
+.wwebjs_cache
+trips.db
+uploads

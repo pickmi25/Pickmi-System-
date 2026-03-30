@@ -1,15 +1,35 @@
 import { Platform } from 'react-native';
 
-const getBackendUrl = () => {
+// Simple global for runtime updates without AsyncStorage for now
+const getInitialUrl = () => {
+  // If we have a production URL defined in env (e.g. via Vercel/Expo), use it.
+  // Otherwise, default to localhost behavior.
+  const prodUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
+  if (prodUrl) return prodUrl;
+
   if (Platform.OS === 'web') {
-    // If we're on web, always use the current domain (localhost or server IP)
-    const host = (typeof window !== 'undefined' && window.location.hostname) 
-      ? window.location.hostname 
-      : 'localhost';
-    return `http://${host}:3000`;
+    return (typeof window !== 'undefined' && window.location.hostname) 
+      ? `http://${window.location.hostname}:3000` 
+      : 'http://localhost:3000';
   }
-  // For mobile devices, use the hardcoded IP of your computer
-  return 'http://192.0.0.2:3000';
+  if (Platform.OS === 'android') {
+    return 'http://localhost:3000'; // Default for Termux on phone
+  }
+  return 'http://192.0.0.2:3000'; // Fallback
 };
 
+global.CUSTOM_BACKEND_URL = getInitialUrl();
+
+export const getBackendUrl = () => {
+  return global.CUSTOM_BACKEND_URL;
+};
+
+// Map existing usage to the dynamic getter
+export const getEffectiveBackendUrl = () => getBackendUrl();
+
+export const setBackendUrl = (url) => {
+    global.CUSTOM_BACKEND_URL = url;
+};
+
+// Legacy support
 export const BACKEND_URL = getBackendUrl();

@@ -2,26 +2,33 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Animated, TouchableOpacity } from 'react-native';
 import { Text, TextInput, Button, Chip, Title, Paragraph, IconButton, SegmentedButtons, Divider } from 'react-native-paper';
 import axios from 'axios';
-import { ArrowLeft, Info, Search, ShieldAlert, Plus, Trash2, LogOut } from 'lucide-react-native';
+import { ArrowLeft, Info, Search, ShieldAlert, Plus, Trash2, LogOut, Server, Globe } from 'lucide-react-native';
 
-import { BACKEND_URL } from '../config'; 
+import { setBackendUrl, getEffectiveBackendUrl } from '../config'; 
 
 const KeywordSettingsScreen = ({ navigation, onLogout }) => {
   const [activeTab, setActiveTab] = useState('match');
   const [matchKeywords, setMatchKeywords] = useState([]);
   const [avoidKeywords, setAvoidKeywords] = useState([]);
   const [newKeyword, setNewKeyword] = useState('');
+  const [backendUrlInput, setBackendUrlInput] = useState(getEffectiveBackendUrl());
   const [loading, setLoading] = useState(false);
 
   const fetchData = async () => {
+    const currentUrl = getEffectiveBackendUrl();
     try {
-      const matchResp = await axios.get(`${BACKEND_URL}/keywords?ts=${Date.now()}`);
-      const avoidResp = await axios.get(`${BACKEND_URL}/avoid-keywords?ts=${Date.now()}`);
+      const matchResp = await axios.get(`${currentUrl}/keywords?ts=${Date.now()}`);
+      const avoidResp = await axios.get(`${currentUrl}/avoid-keywords?ts=${Date.now()}`);
       setMatchKeywords(matchResp.data);
       setAvoidKeywords(avoidResp.data);
     } catch (error) {
       console.error('Fetch Error:', error);
     }
+  };
+
+  const updateServerUrl = () => {
+      setBackendUrl(backendUrlInput);
+      fetchData();
   };
 
   useEffect(() => {
@@ -33,7 +40,7 @@ const KeywordSettingsScreen = ({ navigation, onLogout }) => {
     const endpoint = activeTab === 'match' ? '/keywords' : '/avoid-keywords';
     try {
       setLoading(true);
-      await axios.post(`${BACKEND_URL}${endpoint}`, { word: newKeyword.trim() });
+      await axios.post(`${getBackendUrl()}${endpoint}`, { word: newKeyword.trim() });
       setNewKeyword('');
       fetchData();
       setLoading(false);
@@ -46,7 +53,7 @@ const KeywordSettingsScreen = ({ navigation, onLogout }) => {
   const removeKeyword = async (word) => {
     const endpoint = activeTab === 'match' ? '/keywords' : '/avoid-keywords';
     try {
-      await axios.delete(`${BACKEND_URL}${endpoint}/${word}`);
+      await axios.delete(`${getBackendUrl()}${endpoint}/${word}`);
       fetchData();
     } catch (error) {
       console.error('Remove Error:', error);
@@ -140,6 +147,30 @@ const KeywordSettingsScreen = ({ navigation, onLogout }) => {
               </Chip>
             ))}
           </View>
+        </View>
+
+        <Divider style={[styles.divider, { marginVertical: 32 }]} />
+        
+        <View style={styles.serverSection}>
+           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+               <Server size={22} color="#5d10e3" />
+               <Title style={[styles.sectionTitle, { marginBottom: 0 }]}>Local Server Settings</Title>
+           </View>
+           <Paragraph style={{ color: '#666', marginBottom: 16 }}>
+               Set the IP address of your local server (e.g. your Mac's IP or localhost if running in Termux).
+           </Paragraph>
+           <TextInput
+             mode="outlined"
+             label="Backend Server URL"
+             value={backendUrlInput}
+             onChangeText={setBackendUrlInput}
+             style={styles.input}
+             placeholder="http://192.168.1.10:3000"
+             activeOutlineColor="#5d10e3"
+           />
+           <Button mode="contained" onPress={updateServerUrl} buttonColor="#5d10e3" icon={() => <Globe size={18} color="#fff" />}>
+               Switch Server Address
+           </Button>
         </View>
 
         <View style={styles.logoutSection}>

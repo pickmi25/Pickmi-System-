@@ -5,7 +5,7 @@ import axios from 'axios';
 import { Send, Users, User, ArrowLeft, MessageCircle, Mic } from 'lucide-react-native';
 
 
-import { BACKEND_URL } from '../config'; 
+import { getBackendUrl, getEffectiveBackendUrl } from '../config'; 
 
 const WhatsAppWebScreen = ({ route }) => {
     const { targetChatId, initialMsg, originalMsg, msgId: highlightId } = route.params || {};
@@ -20,7 +20,7 @@ const WhatsAppWebScreen = ({ route }) => {
 
     const fetchChats = async () => {
         try {
-            const response = await axios.get(`${BACKEND_URL}/chats`);
+            const response = await axios.get(`${getBackendUrl()}/chats`);
             setChats(response.data);
             setLoading(false);
         } catch (e) {
@@ -32,11 +32,11 @@ const WhatsAppWebScreen = ({ route }) => {
     const fetchMessages = async (chatId) => {
         try {
             setMsgLoading(true);
-            const response = await axios.get(`${BACKEND_URL}/chats/${chatId}/messages`);
+            const response = await axios.get(`${getBackendUrl()}/chats/${chatId}/messages`);
             setMessages(response.data);
             setMsgLoading(false);
             // Mark as read in backend
-            axios.post(`${BACKEND_URL}/chats/${chatId}/read`).catch(() => {});
+            axios.post(`${getBackendUrl()}/chats/${chatId}/read`).catch(() => {});
             // Clear unread count locally for instant UI response
             setChats(prev => prev.map(c => c.id === chatId ? { ...c, unreadCount: 0 } : c));
         } catch (e) {
@@ -50,7 +50,7 @@ const WhatsAppWebScreen = ({ route }) => {
         const msgToSend = inputText;
         setInputText('');
         try {
-            await axios.post(`${BACKEND_URL}/chats/send`, {
+            await axios.post(`${getBackendUrl()}/chats/send`, {
                 chatId: selectedChat.id,
                 message: msgToSend
             });

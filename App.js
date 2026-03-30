@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer, DefaultTheme as NavigationDefaultTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { View, Platform } from 'react-native';
 import { Provider as PaperProvider, DefaultTheme as PaperDefaultTheme } from 'react-native-paper';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -82,15 +83,34 @@ function TabNavigator({ onLogout }) {
 }
 
 export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = React.useState(false);
+  const [isLoggedIn, setIsLoggedIn] = React.useState(null); // Use null for initial loading state
+
+  React.useEffect(() => {
+    // Check localStorage for web persistence
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+       const saved = localStorage.getItem('pickmi_isLoggedIn');
+       setIsLoggedIn(saved === 'true');
+    } else {
+       setIsLoggedIn(false);
+    }
+  }, []);
 
   const handleLogin = () => {
     setIsLoggedIn(true);
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        localStorage.setItem('pickmi_isLoggedIn', 'true');
+    }
   };
 
   const handleLogout = () => {
     setIsLoggedIn(false);
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        localStorage.removeItem('pickmi_isLoggedIn');
+    }
   };
+
+  // Skip rendering until we know login status
+  if (isLoggedIn === null) return null;
 
   if (!isLoggedIn) {
     return (

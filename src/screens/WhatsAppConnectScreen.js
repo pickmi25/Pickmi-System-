@@ -4,7 +4,7 @@ import { Text, Button, Card, Title, Paragraph, Avatar, Divider, List, IconButton
 import axios from 'axios';
 import { Smartphone, CheckCircle, AlertCircle, LogOut, ChevronRight, MessageSquare, RefreshCw, Users, User, ArrowLeft, Send, Mic, MoreVertical } from 'lucide-react-native';
 import AudioMessage from '../components/AudioMessage';
-import { BACKEND_URL } from '../config'; 
+import { getBackendUrl, getEffectiveBackendUrl } from '../config'; 
 
 const WhatsAppConnectScreen = ({ navigation, route }) => {
   const { targetChatId, initialMsg, originalMsg, msgId: highlightId } = route.params || {};
@@ -26,13 +26,13 @@ const WhatsAppConnectScreen = ({ navigation, route }) => {
 
   const fetchData = async () => {
     try {
-      const resp = await axios.get(`${BACKEND_URL}/qr?ts=${Date.now()}`);
+      const resp = await axios.get(`${getBackendUrl()}/qr?ts=${Date.now()}`);
       const newStatus = resp.data.status;
       setQr(resp.data.qr);
       setStatus(newStatus);
       
       if (newStatus === 'Connected' && !profile) {
-          const profResp = await axios.get(`${BACKEND_URL}/profile?ts=${Date.now()}`);
+          const profResp = await axios.get(`${getBackendUrl()}/profile?ts=${Date.now()}`);
           setProfile(profResp.data);
           fetchChats();
       }
@@ -49,7 +49,7 @@ const WhatsAppConnectScreen = ({ navigation, route }) => {
       setQr('');
       setProfile(null);
       setMenuVisible(false);
-      await axios.post(`${BACKEND_URL}/reset`);
+      await axios.post(`${getBackendUrl()}/reset`);
       fetchData();
     } catch (error) {
       console.error('Reset Error:', error);
@@ -60,7 +60,7 @@ const WhatsAppConnectScreen = ({ navigation, route }) => {
   const fetchChats = async () => {
     if (status !== 'Connected') return;
     try {
-        const response = await axios.get(`${BACKEND_URL}/chats?ts=${Date.now()}`);
+        const response = await axios.get(`${getBackendUrl()}/chats?ts=${Date.now()}`);
         setChats(response.data);
     } catch (e) {
         console.error("Fetch Chats Error:", e);
@@ -70,10 +70,10 @@ const WhatsAppConnectScreen = ({ navigation, route }) => {
   const fetchMessages = async (chatId) => {
     try {
         setMsgLoading(true);
-        const response = await axios.get(`${BACKEND_URL}/chats/${chatId}/messages`);
+        const response = await axios.get(`${getBackendUrl()}/chats/${chatId}/messages`);
         setMessages(response.data);
         setMsgLoading(false);
-        axios.post(`${BACKEND_URL}/chats/${chatId}/read`).catch(() => {});
+        axios.post(`${getBackendUrl()}/chats/${chatId}/read`).catch(() => {});
         setChats(prev => prev.map(c => c.id === chatId ? { ...c, unreadCount: 0 } : c));
     } catch (e) {
         console.error("Fetch Messages Error:", e);
@@ -86,7 +86,7 @@ const WhatsAppConnectScreen = ({ navigation, route }) => {
     const msgToSend = inputText;
     setInputText('');
     try {
-        await axios.post(`${BACKEND_URL}/chats/send`, {
+        await axios.post(`${getBackendUrl()}/chats/send`, {
             chatId: selectedChat.id,
             message: msgToSend
         });
@@ -191,7 +191,7 @@ const WhatsAppConnectScreen = ({ navigation, route }) => {
                                 {!m.fromMe && <Text style={[styles.msgSender, isHighlight && styles.highlightedMsgSender]}>{m.senderName?.split('@')[0]}</Text>}
                                 {m.type === 'ptt' || m.type === 'audio' ? (
                                     <AudioMessage 
-                                        uri={m.mediaUrl ? `${BACKEND_URL}${m.mediaUrl}` : `${BACKEND_URL}/messages/${m.id}/media`} 
+                                        uri={m.mediaUrl ? `${getBackendUrl()}${m.mediaUrl}` : `${getBackendUrl()}/messages/${m.id}/media`} 
                                         isDark={m.fromMe} 
                                     />
                                 ) : (

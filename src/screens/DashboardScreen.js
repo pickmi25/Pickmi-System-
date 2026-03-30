@@ -5,7 +5,7 @@ import axios from 'axios';
 import { Trash2, Plus, Search, RefreshCw, RefreshCcw, X, MessageCircle, MessageSquare, MoreVertical, Smartphone, Clock, MapPin, Users, Mic, User, Filter, Settings } from 'lucide-react-native';
 import AudioMessage from '../components/AudioMessage';
 import io from 'socket.io-client';
-import { BACKEND_URL } from '../config'; 
+import { getBackendUrl, getEffectiveBackendUrl } from '../config'; 
 
 const DashboardScreen = ({ navigation }) => {
   const [trips, setTrips] = useState([]);
@@ -17,7 +17,7 @@ const DashboardScreen = ({ navigation }) => {
   const fetchTrips = async () => {
     try {
       setRefreshing(true);
-      const response = await axios.get(`${BACKEND_URL}/trips`);
+      const response = await axios.get(`${getBackendUrl()}/trips`);
       setTrips(response.data);
       setRefreshing(false);
     } catch (error) {
@@ -28,7 +28,7 @@ const DashboardScreen = ({ navigation }) => {
 
   const fetchStatus = async () => {
     try {
-      const response = await axios.get(`${BACKEND_URL}/status`);
+      const response = await axios.get(`${getBackendUrl()}/status`);
       setStatus(response.data.status);
     } catch (error) {
       console.error('Fetch Status Error:', error);
@@ -41,7 +41,7 @@ const DashboardScreen = ({ navigation }) => {
     fetchStatus();
 
     // Setup Socket.io
-    const socket = io(BACKEND_URL, {
+    const socket = io(getEffectiveBackendUrl(), {
         transports: ['websocket'],
         reconnection: true,
         timeout: 10000 
@@ -87,7 +87,7 @@ const DashboardScreen = ({ navigation }) => {
 
   const confirmTrip = async (id) => {
     try {
-      await axios.post(`${BACKEND_URL}/trips/${id}/confirm`);
+      await axios.post(`${getBackendUrl()}/trips/${id}/confirm`);
       fetchTrips();
     } catch (error) {
        console.error('Confirm Trip Error:', error);
@@ -97,7 +97,7 @@ const DashboardScreen = ({ navigation }) => {
   const bulkDelete = async () => {
     if (selectedIds.length === 0) return;
     try {
-        await axios.post(`${BACKEND_URL}/trips/bulk-delete`, { ids: selectedIds });
+        await axios.post(`${getBackendUrl()}/trips/bulk-delete`, { ids: selectedIds });
         setSelectedIds([]);
         setSelectionMode(false);
         fetchTrips();
@@ -109,7 +109,7 @@ const DashboardScreen = ({ navigation }) => {
   const bulkConvert = async () => {
     if (selectedIds.length === 0) return;
     try {
-        await axios.post(`${BACKEND_URL}/trips/bulk-confirm`, { ids: selectedIds });
+        await axios.post(`${getBackendUrl()}/trips/bulk-confirm`, { ids: selectedIds });
         setSelectedIds([]);
         setSelectionMode(false);
         fetchTrips();
@@ -120,7 +120,7 @@ const DashboardScreen = ({ navigation }) => {
 
   const deleteHistory = async () => {
     try {
-      await axios.delete(`${BACKEND_URL}/trips`);
+      await axios.delete(`${getBackendUrl()}/trips`);
       fetchTrips();
     } catch (error) {
        console.error('Clear History Error:', error);
@@ -207,7 +207,7 @@ const DashboardScreen = ({ navigation }) => {
                 <View style={styles.rawMessageContainer}>
                     {item.mediaUrl?.includes('audio') ? (
                         <AudioMessage 
-                            uri={`${BACKEND_URL}${item.mediaUrl}`} 
+                            uri={`${getBackendUrl()}${item.mediaUrl}`} 
                             transcription={item.transcription} 
                         />
                     ) : item.message?.includes('[Voice Message]') ? (
@@ -367,7 +367,7 @@ const DashboardScreen = ({ navigation }) => {
 
       <FlatList
         data={trips}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item) => (item.id || item.msgId || Math.random()).toString()}
         renderItem={renderTrip}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={fetchTrips} tintColor="#5d10e3" />

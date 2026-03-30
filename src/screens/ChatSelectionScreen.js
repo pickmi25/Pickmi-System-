@@ -4,9 +4,7 @@ import { Text, Title, Searchbar, Checkbox, List, Avatar, Button, IconButton } fr
 import axios from 'axios';
 import { Users, User, ArrowLeft, Search, Filter } from 'lucide-react-native';
 
-const BACKEND_URL = (typeof window !== 'undefined' && window.location.hostname) 
-  ? `http://${window.location.hostname}:3000` 
-  : 'http://192.0.0.2:3000';
+import { getBackendUrl } from '../config'; 
 
 const ChatSelectionScreen = ({ navigation }) => {
   const [chats, setChats] = useState([]);
@@ -19,8 +17,8 @@ const ChatSelectionScreen = ({ navigation }) => {
     try {
       setLoading(true);
       const [chatsRes, monitoredRes] = await Promise.all([
-        axios.get(`${BACKEND_URL}/chats`),
-        axios.get(`${BACKEND_URL}/monitored-chats`)
+        axios.get(`${getBackendUrl()}/chats`),
+        axios.get(`${getBackendUrl()}/monitored-chats`)
       ]);
       setChats(chatsRes.data);
       setMonitoredIds(monitoredRes.data.map(m => m.id));
@@ -39,10 +37,10 @@ const ChatSelectionScreen = ({ navigation }) => {
     const isMonitored = monitoredIds.includes(chat.id);
     try {
       if (isMonitored) {
-        await axios.delete(`${BACKEND_URL}/monitored-chats/${chat.id}`);
+        await axios.delete(`${getBackendUrl()}/monitored-chats/${chat.id}`);
         setMonitoredIds(prev => prev.filter(id => id !== chat.id));
       } else {
-        await axios.post(`${BACKEND_URL}/monitored-chats`, {
+        await axios.post(`${getBackendUrl()}/monitored-chats`, {
           id: chat.id,
           name: chat.name,
           isGroup: chat.isGroup
