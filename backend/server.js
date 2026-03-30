@@ -8,7 +8,11 @@ const path = require('path');
 const fs = require('fs');
 const { createClient } = require('@supabase/supabase-js');
 
-// Environment-based config with fallback to localhost or port provided by host (Render/Heroku)
+// Log startup info for debugging
+console.log("Starting server in environment:", process.env.NODE_ENV || 'development');
+console.log("Puppeteer path override:", process.env.PUPPETEER_EXECUTABLE_PATH || 'Not set');
+
+// Environment-based config
 const PORT = process.env.PORT || 3000;
 
 // Supabase configuration
@@ -24,10 +28,26 @@ if (supabaseUrl && supabaseKey) {
         console.error("Failed to initialize Supabase:", err.message);
     }
 } else {
-    console.error("CRITICAL: SUPABASE_URL or SUPABASE_KEY is missing from environment variables.");
-    // In production (Render), this will cause a crash later if not handled, 
-    // but at least we get a clear error message in the logs.
+    console.warn("⚠️ WARNING: SUPABASE_URL or SUPABASE_KEY is missing. Database sync will be disabled.");
+    // Mock the supabase client to avoid crashes if it's used later
+    supabase = {
+        from: () => ({
+            insert: () => Promise.resolve({ error: null }),
+            upsert: () => Promise.resolve({ error: null }),
+            delete: () => ({ match: () => Promise.resolve({ error: null }) }),
+            select: () => Promise.resolve({ data: [], error: null })
+        })
+    };
 }
+
+// Catch unhandled exceptions to prevent crash 
+process.on('uncaughtException', (err) => {
+    console.error('CRITICAL: Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('CRITICAL: Unhandled Rejection at:', promise, 'reason:', reason);
+});
 
 // OpenAI Configuration
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
