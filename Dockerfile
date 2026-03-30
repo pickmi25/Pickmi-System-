@@ -1,8 +1,9 @@
-# Use a full-featured node base image
-FROM node:18-slim
+# Use a modern node base image (Node 22 Bookworm)
+FROM node:22-slim
 
 # Install dependencies for puppeteer (Chrome) and ffmpeg for audio
 RUN apt-get update && apt-get install -y \
+    python3 g++ make \
     gconf-service libasound2 libatk1.0-0 libc6 libcairo2 libcups2 libdbus-1-3 \
     libexpat1 libfontconfig1 libgcc1 libgconf-2-4 libgdk-pixbuf2.0-0 \
     libglib2.0-0 libgtk-3-0 libnspr4 libpango-1.0-0 libpangocairo-1.0-0 \
